@@ -1,19 +1,15 @@
 openapi: 3.0.3
 info:
-  title: EKS MSA Portfolio API
+  title: EKS MSA Portfolio
   version: 1.0.0
   description: |
     Spring Cloud Gateway 기반 MSA API 문서.
 
     Gateway 라우팅 (prod-uri):
-    - /ordering/**  -> ordering-service
-    - /product/**   -> product-service
-    - /member/**    -> member-service
-    (또한 /ordering-service/**, /product-service/** 형태도 존재)
-
-    참고:
-    - 현재 Swagger 문서는 GitHub Pages로 호스팅됨.
-    - 실제 서버가 비활성화된 경우 Try it out은 동작하지 않을 수 있음.
+    - /member/**   -> member-service
+    - /ordering/** -> ordering-service
+    - /product/**  -> product-service
+    (또한 /member-service/**, /ordering-service/**, /product-service/** 형태도 존재)
 
 servers:
   - url: https://server.awskdy.click
@@ -21,6 +17,8 @@ servers:
 tags:
   - name: common
     description: 공통
+  - name: member
+    description: 회원/인증
   - name: ordering
     description: 주문
   - name: product
@@ -41,13 +39,99 @@ paths:
                 type: string
                 example: ok2
 
+  /member/create:
+    post:
+      tags: [member]
+      summary: 회원가입
+      description: MemberController.memberCreate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemberSaveReqDto"
+            example:
+              name: "donny"
+              email: "donny@example.com"
+              password: "P@ssw0rd!"
+      responses:
+        "201":
+          description: Created (member id 반환)
+          content:
+            application/json:
+              schema:
+                type: integer
+                format: int64
+                example: 1
+
+  /member/doLogin:
+    post:
+      tags: [member]
+      summary: 로그인
+      description: |
+        MemberController.doLogin
+        - Body: LoginDto (JSON)
+        - Response: id, token(AT), refreshToken(RT)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginDto"
+            example:
+              email: "donny@example.com"
+              password: "P@ssw0rd!"
+      responses:
+        "200":
+          description: OK (loginInfo)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+              example:
+                id: 1
+                token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                refreshToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+  /member/refresh-token:
+    post:
+      tags: [member]
+      summary: Access Token 재발급
+      description: |
+        MemberController.generateNewAt
+        - Body: MemberRefreshDto (JSON)
+        - Response: token(새 AT)
+        - 검증 실패 시 400
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemberRefreshDto"
+            example:
+              refreshToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        "200":
+          description: OK (new AT)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenOnlyResponse"
+              example:
+                token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        "400":
+          description: Bad Request (RT 검증 실패)
+          content:
+            application/json:
+              schema:
+                nullable: true
+
   /ordering/create:
     post:
       tags: [ordering]
       summary: 주문 생성
       description: |
         OrderingController.orderCreate
-
         - Header: X-User-Id (required)
         - Body: OrderCreateDto (JSON)
         - Response: ordering id (Long)
@@ -84,10 +168,8 @@ paths:
       summary: 상품 생성
       description: |
         ProductController.productCreate
-
         - Header: X-User-Id (required)
         - Body: ProductRegisterDto
-        - Response: product id (Long)
 
         주의:
         - 코드에서 @RequestBody가 없어서 Spring MVC 기본 바인딩(폼 파라미터) 가능성이 큼.
@@ -121,7 +203,6 @@ paths:
       summary: 상품 상세 조회
       description: |
         ProductController.productDetail
-
         - Path: id
         - Header: X-User-Id (required)
         - Response: ProductResDto
@@ -160,7 +241,6 @@ paths:
       summary: 재고 수정
       description: |
         ProductController.updateStock
-
         - Body: ProductUpdateStockDto (JSON)
         - Response: product id (Long)
       requestBody:
@@ -184,6 +264,76 @@ paths:
 
 components:
   schemas:
+    # ---- member ----
+    LoginDto:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          description: 이메일
+          example: "donny@example.com"
+        password:
+          type: string
+          description: 비밀번호
+          example: "P@ssw0rd!"
+
+    MemberSaveReqDto:
+      type: object
+      required: [name, email, password]
+      properties:
+        name:
+          type: string
+          description: 이름
+          example: "donny"
+        email:
+          type: string
+          format: email
+          description: 이메일
+          example: "donny@example.com"
+        password:
+          type: string
+          description: 비밀번호
+          example: "P@ssw0rd!"
+
+    MemberRefreshDto:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+          description: Refresh Token
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    LoginResponse:
+      type: object
+      required: [id, token, refreshToken]
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: 회원 ID
+          example: 1
+        token:
+          type: string
+          description: Access Token
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        refreshToken:
+          type: string
+          description: Refresh Token
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    TokenOnlyResponse:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+          description: 새로 발급된 Access Token
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    # ---- ordering ----
     OrderCreateDto:
       type: object
       required: [productId, productCount]
@@ -199,6 +349,7 @@ components:
           description: 주문 수량
           example: 2
 
+    # ---- product ----
     ProductRegisterDto:
       type: object
       required: [name, category, price, stockQuantity]
