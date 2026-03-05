@@ -1,33 +1,41 @@
 openapi: 3.0.3
 info:
-  title: EKS MSA Portfolio
+  title: AWS EKS 기반 MSA 운영 포트폴리오 - API 문서
   version: 1.0.0
   description: |
-    Spring Cloud Gateway 기반 MSA API 문서.
+    본 프로젝트는 Spring Boot 마이크로서비스(member/product/ordering)를 AWS EKS(Kubernetes) 환경에서 운영하기 위한 인프라/배포/관측 체계를 구성한 운영 중심 포트폴리오입니다.
 
-    Gateway 라우팅 (prod-uri):
-    - /member/**   -> member-service
-    - /ordering/** -> ordering-service
-    - /product/**  -> product-service
-    (또한 /member-service/**, /ordering-service/**, /product-service/** 형태도 존재)
+    운영 구성(포트폴리오 포인트):
+    - Infrastructure: AWS(EKS, EC2, Route53, RDS Aurora MySQL)
+    - Container: Docker, Kubernetes
+    - GitOps/CD: ArgoCD
+    - CI: GitHub Actions -> Docker build -> ECR push
+    - Monitoring: Prometheus, Grafana
+    - Autoscaling: HPA, Cluster Autoscaler
+    - MSA: Spring MSA, API Gateway(Spring Cloud Gateway)
+    - DNS/HTTPS: Route53, cert-manager, Ingress
+
+    이 문서는 운영 환경에서 서비스들이 제공하는 API 엔드포인트를 정리한 문서입니다.
+    (현재 실제 서버가 내려가 있으면 Try it out 호출은 동작하지 않을 수 있습니다.)
 
 servers:
   - url: https://server.awskdy.click
+    description: 운영 도메인(예시). 실제 배포 시 Ingress/Route53로 연결된 URL
 
 tags:
-  - name: common
-    description: 공통
-  - name: member
-    description: 회원/인증
-  - name: ordering
-    description: 주문
-  - name: product
-    description: 상품
+  - name: System
+    description: 운영 점검(Health 등)
+  - name: Auth
+    description: 인증/토큰(JWT + Redis RefreshToken)
+  - name: Product Service
+    description: 상품 서비스(재고 관리)
+  - name: Ordering Service
+    description: 주문 서비스(이벤트 기반 연동)
 
 paths:
   /health:
     get:
-      tags: [common]
+      tags: [System]
       summary: Health check
       description: HealthController.healthCheck
       responses:
@@ -41,7 +49,7 @@ paths:
 
   /member/create:
     post:
-      tags: [member]
+      tags: [Auth]
       summary: 회원가입
       description: MemberController.memberCreate
       requestBody:
@@ -66,12 +74,13 @@ paths:
 
   /member/doLogin:
     post:
-      tags: [member]
+      tags: [Auth]
       summary: 로그인
       description: |
         MemberController.doLogin
         - Body: LoginDto (JSON)
-        - Response: id, token(AT), refreshToken(RT)
+        - Response: id, token(AccessToken), refreshToken(RefreshToken)
+        - RefreshToken은 Redis에 저장(코드 기준)
       requestBody:
         required: true
         content:
@@ -95,13 +104,14 @@ paths:
 
   /member/refresh-token:
     post:
-      tags: [member]
+      tags: [Auth]
       summary: Access Token 재발급
       description: |
         MemberController.generateNewAt
         - Body: MemberRefreshDto (JSON)
-        - Response: token(새 AT)
-        - 검증 실패 시 400
+        - RefreshToken을 디코딩하여 subject(email 추정)을 얻고 Redis 값과 비교(코드 기준)
+        - 성공 시 새 AccessToken(token) 반환
+        - 실패 시 400
       requestBody:
         required: true
         content:
@@ -126,53 +136,15 @@ paths:
               schema:
                 nullable: true
 
-  /ordering/create:
-    post:
-      tags: [ordering]
-      summary: 주문 생성
-      description: |
-        OrderingController.orderCreate
-        - Header: X-User-Id (required)
-        - Body: OrderCreateDto (JSON)
-        - Response: ordering id (Long)
-      parameters:
-        - name: X-User-Id
-          in: header
-          required: true
-          schema:
-            type: string
-          description: 사용자 식별자(필수)
-          example: "1"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/OrderCreateDto"
-            example:
-              productId: 1
-              productCount: 2
-      responses:
-        "201":
-          description: Created (ordering id 반환)
-          content:
-            application/json:
-              schema:
-                type: integer
-                format: int64
-                example: 100
-
   /product/create:
     post:
-      tags: [product]
+      tags: [Product Service]
       summary: 상품 생성
       description: |
         ProductController.productCreate
         - Header: X-User-Id (required)
         - Body: ProductRegisterDto
-
-        주의:
-        - 코드에서 @RequestBody가 없어서 Spring MVC 기본 바인딩(폼 파라미터) 가능성이 큼.
+        주의: 코드에서 @RequestBody가 없어서 Spring MVC 기본 바인딩(폼 파라미터) 가능성이 큼.
       parameters:
         - name: X-User-Id
           in: header
@@ -199,7 +171,7 @@ paths:
 
   /product/{id}:
     get:
-      tags: [product]
+      tags: [Product Service]
       summary: 상품 상세 조회
       description: |
         ProductController.productDetail
@@ -237,7 +209,7 @@ paths:
 
   /product/updatestock:
     put:
-      tags: [product]
+      tags: [Product Service]
       summary: 재고 수정
       description: |
         ProductController.updateStock
@@ -262,9 +234,45 @@ paths:
                 format: int64
                 example: 200
 
+  /ordering/create:
+    post:
+      tags: [Ordering Service]
+      summary: 주문 생성
+      description: |
+        OrderingController.orderCreate
+        - Header: X-User-Id (required)
+        - Body: OrderCreateDto (JSON)
+        - Response: ordering id (Long)
+      parameters:
+        - name: X-User-Id
+          in: header
+          required: true
+          schema:
+            type: string
+          description: 사용자 식별자(필수)
+          example: "1"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderCreateDto"
+            example:
+              productId: 1
+              productCount: 2
+      responses:
+        "201":
+          description: Created (ordering id 반환)
+          content:
+            application/json:
+              schema:
+                type: integer
+                format: int64
+                example: 100
+
 components:
   schemas:
-    # ---- member ----
+    # ---- member/auth ----
     LoginDto:
       type: object
       required: [email, password]
