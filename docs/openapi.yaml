@@ -3,272 +3,169 @@ info:
   title: EKS MSA Portfolio API
   version: 1.0.0
   description: |
-    AWS EKS 기반 MSA 포트폴리오 API 문서.
-    (현재는 인프라 삭제 상태라 Try it out은 동작하지 않을 수 있습니다.)
+    Spring Cloud Gateway 기반 MSA API 문서.
+    Gateway 라우팅 (prod-uri):
+    - /ordering/**  -> ordering-service
+    - /product/**   -> product-service
+    - /member/**    -> member-service
+    (또한 /ordering-service/**, /product-service/** 형태도 존재)
 
 servers:
-  - url: https://example.com
+  - url: https://server.awskdy.click
 
 tags:
-  - name: member
-    description: 회원
-  - name: categories
-    description: 카테고리
-  - name: searchOption
-    description: 검색옵션
+  - name: common
+    description: 공통
+  - name: ordering
+    description: 주문
+  - name: product
+    description: 상품
 
 paths:
   /health:
     get:
+      tags: [common]
       summary: Health check
       responses:
         "200":
           description: OK
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: ok2
 
-  /api/v1/member/sign:
+  /ordering/create:
     post:
-      tags: [member]
-      summary: 회원가입
+      tags: [ordering]
+      summary: 주문 생성
+      description: |
+        OrderingController.orderCreate
+        - Header: X-User-Id (required)
+        - Body: OrderCreateDto (JSON)
+      parameters:
+        - name: X-User-Id
+          in: header
+          required: true
+          schema:
+            type: string
+          description: 사용자 식별자(컨트롤러에서 필수로 요구)
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/MemberSignRequest"
+              $ref: "#/components/schemas/OrderCreateDto"
+      responses:
+        "201":
+          description: Created (ordering id 반환)
+          content:
+            application/json:
+              schema:
+                type: integer
+                format: int64
+
+  /product/create:
+    post:
+      tags: [product]
+      summary: 상품 생성
+      description: |
+        ProductController.productCreate
+        - Header: X-User-Id (required)
+        - Body: ProductRegisterDto
+        주의: 코드에서 @RequestBody가 없어서 Spring MVC 기본 바인딩(폼 파라미터) 가능성이 큼.
+      parameters:
+        - name: X-User-Id
+          in: header
+          required: true
+          schema:
+            type: string
+          description: 사용자 식별자(컨트롤러에서 필수로 요구)
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/ProductRegisterDto"
+      responses:
+        "201":
+          description: Created (product id 반환)
+          content:
+            application/json:
+              schema:
+                type: integer
+                format: int64
+
+  /product/{id}:
+    get:
+      tags: [product]
+      summary: 상품 상세 조회
+      description: |
+        ProductController.productDetail
+        - Path: id
+        - Header: X-User-Id (required)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: X-User-Id
+          in: header
+          required: true
+          schema:
+            type: string
       responses:
         "200":
-          description: OK
+          description: OK (ProductResDto)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductResDto"
 
+  /product/updatestock:
     put:
-      tags: [member]
-      summary: 회원정보 수정
+      tags: [product]
+      summary: 재고 수정
+      description: |
+        ProductController.updateStock
+        - Body: ProductUpdateStockDto (JSON)
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/MemberUpdateRequest"
+              $ref: "#/components/schemas/ProductUpdateStockDto"
       responses:
         "200":
-          description: OK
-
-  /api/v1/member/login:
-    post:
-      tags: [member]
-      summary: 로그인
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/LoginRequest"
-      responses:
-        "200":
-          description: OK
-
-  /api/v1/member/logout:
-    get:
-      tags: [member]
-      summary: 로그아웃
-      responses:
-        "200":
-          description: OK
-
-  /api/v1/member/info:
-    get:
-      tags: [member]
-      summary: 회원정보 조회
-      responses:
-        "200":
-          description: OK
-
-  /api/v1/categories:
-    get:
-      tags: [categories]
-      summary: 카테고리 조회
-      responses:
-        "200":
-          description: OK
-
-  /api/v1/categories/{seqId}:
-    get:
-      tags: [categories]
-      summary: 특정 카테고리 조회
-      parameters:
-        - name: seqId
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: OK
-
-    post:
-      tags: [categories]
-      summary: 카테고리 등록
-      parameters:
-        - name: seqId
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CategoryCreateRequest"
-      responses:
-        "200":
-          description: OK
-
-    put:
-      tags: [categories]
-      summary: 카테고리 수정
-      parameters:
-        - name: seqId
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CategoryUpdateRequest"
-      responses:
-        "200":
-          description: OK
-
-  /api/v1/categories/child/{seqId}:
-    get:
-      tags: [categories]
-      summary: 자식 카테고리 조회
-      parameters:
-        - name: seqId
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: OK
-
-  /api/v1/searchOption/kind:
-    post:
-      tags: [searchOption]
-      summary: 검색옵션 등록
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/SearchOptionCreateRequest"
-      responses:
-        "200":
-          description: OK
-
-  /api/v1/searchOption/kind/{searchOptionId}:
-    get:
-      tags: [searchOption]
-      summary: 검색옵션 조회
-      parameters:
-        - name: searchOptionId
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: OK
-
-    put:
-      tags: [searchOption]
-      summary: 검색옵션 수정
-      parameters:
-        - name: searchOptionId
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/SearchOptionUpdateRequest"
-      responses:
-        "200":
-          description: OK
+          description: OK (product id 반환)
+          content:
+            application/json:
+              schema:
+                type: integer
+                format: int64
 
 components:
   schemas:
-    LoginRequest:
+    # DTO 필드 정의는 네가 DTO 클래스 코드를 안 줘서 확인할 수 없음.
+    # 그래서 "object + additionalProperties: true"로 열어둠(문서가 깨지지 않게).
+    OrderCreateDto:
       type: object
-      required: [userName, password]
-      properties:
-        userName:
-          type: string
-          description: 회원 ID
-          example: sinnake
-        password:
-          type: string
-          description: 비밀번호
-          example: "q1w2e3r$"
+      additionalProperties: true
+      description: OrderCreateDto (필드 구성은 코드 기준으로 확인 필요)
 
-    MemberSignRequest:
+    ProductRegisterDto:
       type: object
-      required: [userName, password, rePassword]
-      properties:
-        userName:
-          type: string
-          description: 회원 ID
-        password:
-          type: string
-          description: 비밀번호
-        rePassword:
-          type: string
-          description: 비밀번호 확인
-        address:
-          type: string
-          description: 주소
+      additionalProperties: true
+      description: ProductRegisterDto (필드 구성은 코드 기준으로 확인 필요)
 
-    MemberUpdateRequest:
+    ProductUpdateStockDto:
       type: object
-      properties:
-        password:
-          type: string
-          description: 변경할 비밀번호
-        address:
-          type: string
-          description: 변경할 주소
+      additionalProperties: true
+      description: ProductUpdateStockDto (필드 구성은 코드 기준으로 확인 필요)
 
-    CategoryCreateRequest:
+    ProductResDto:
       type: object
-      properties:
-        name:
-          type: string
-          description: 카테고리명
-
-    CategoryUpdateRequest:
-      type: object
-      properties:
-        name:
-          type: string
-          description: 카테고리명
-
-    SearchOptionCreateRequest:
-      type: object
-      properties:
-        kindName:
-          type: string
-          description: 검색옵션 이름
-
-    SearchOptionUpdateRequest:
-      type: object
-      properties:
-        kindName:
-          type: string
-          description: 검색옵션 이름
+      additionalProperties: true
+      description: ProductResDto (필드 구성은 코드 기준으로 확인 필요)
