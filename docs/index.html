@@ -1,21 +1,97 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
-  <title>EKS MSA API Docs</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AWS EKS MSA 운영 포트폴리오 - API Docs</title>
+
   <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist/swagger-ui.css" />
+
+  <style>
+    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 28px 16px; }
+    .hero {
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      padding: 18px 18px;
+      background: #fff;
+      box-shadow: 0 1px 2px rgba(0,0,0,.04);
+      margin-bottom: 18px;
+    }
+    .title { font-size: 22px; font-weight: 800; margin: 0 0 8px; }
+    .desc { margin: 0; color: #4b5563; line-height: 1.5; }
+    .chips { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip {
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+    }
+    .links { margin-top: 12px; display: flex; gap: 14px; flex-wrap: wrap; }
+    .links a { color: #111827; text-decoration: none; border-bottom: 1px solid #d1d5db; }
+    .note {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #6b7280;
+    }
+    /* Swagger UI 상단 바 제거(기본 큰 헤더가 필요 없어서) */
+    .swagger-ui .topbar { display: none; }
+  </style>
 </head>
 <body>
+  <div class="wrap">
+    <div class="hero">
+      <h1 class="title">AWS EKS 기반 MSA 운영 포트폴리오</h1>
+      <p class="desc">
+        Spring Boot 마이크로서비스(member/product/ordering)를 AWS EKS(Kubernetes) 환경에서 운영하기 위한
+        배포(GitOps), 관측(모니터링), 오토스케일링, DNS/HTTPS 구성을 중심으로 정리한 문서입니다.
+      </p>
 
-<div id="swagger-ui"></div>
+      <div class="chips">
+        <span class="chip">AWS · EKS</span>
+        <span class="chip">Aurora RDS MySQL</span>
+        <span class="chip">Route53</span>
+        <span class="chip">Docker · Kubernetes</span>
+        <span class="chip">GitHub Actions → ECR</span>
+        <span class="chip">ArgoCD (GitOps)</span>
+        <span class="chip">Prometheus · Grafana</span>
+        <span class="chip">HPA · Cluster Autoscaler</span>
+        <span class="chip">Ingress · cert-manager</span>
+        <span class="chip">Kafka · Redis</span>
+      </div>
 
-<script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
+      <div class="links">
+        <a href="https://github.com/donnyya1031/eks-msa" target="_blank" rel="noreferrer">GitHub Repo</a>
+        <a href="./openapi.yaml" target="_blank" rel="noreferrer">OpenAPI Spec (YAML)</a>
+      </div>
 
-<script>
-const ui = SwaggerUIBundle({
-  url: "./openapi.yaml",
-  dom_id: '#swagger-ui'
-})
-</script>
+      <div class="note">
+        ※ 현재 실제 서버가 내려가 있으면 “Try it out” 실행은 실패할 수 있습니다. (문서 확인용)
+      </div>
+    </div>
 
+    <div id="swagger-ui"></div>
+  </div>
+
+  <script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
+  <script>
+    window.onload = () => {
+      SwaggerUIBundle({
+        url: "./openapi.yaml",
+        dom_id: "#swagger-ui",
+
+        deepLinking: true,
+        persistAuthorization: true,
+
+        // 기본 펼침/정렬 스타일
+        docExpansion: "list",         // none | list | full
+        defaultModelsExpandDepth: 1,  // Schemas 기본 펼침
+        defaultModelExpandDepth: 2,
+        tagsSorter: "alpha",
+        operationsSorter: "alpha"
+      });
+    };
+  </script>
 </body>
 </html>
