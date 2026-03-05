@@ -15,8 +15,6 @@ info:
     - MSA: Spring MSA, API Gateway(Spring Cloud Gateway)
     - DNS/HTTPS: Route53, cert-manager, Ingress
 
-    이 문서는 운영 환경에서 서비스들이 제공하는 API 엔드포인트를 정리한 문서입니다.
-    (현재 실제 서버가 내려가 있으면 Try it out 호출은 동작하지 않을 수 있습니다.)
 
 servers:
   - url: https://server.awskdy.click
