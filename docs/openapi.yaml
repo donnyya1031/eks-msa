@@ -49,13 +49,17 @@ paths:
           required: true
           schema:
             type: string
-          description: 사용자 식별자(컨트롤러에서 필수로 요구)
+          description: 사용자 식별자(필수)
+          example: "1"
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/OrderCreateDto"
+            example:
+              productId: 1
+              productCount: 2
       responses:
         "201":
           description: Created (ordering id 반환)
@@ -64,6 +68,7 @@ paths:
               schema:
                 type: integer
                 format: int64
+                example: 100
 
   /product/create:
     post:
@@ -80,7 +85,8 @@ paths:
           required: true
           schema:
             type: string
-          description: 사용자 식별자(컨트롤러에서 필수로 요구)
+          description: 사용자 식별자(필수)
+          example: "1"
       requestBody:
         required: true
         content:
@@ -95,6 +101,7 @@ paths:
               schema:
                 type: integer
                 format: int64
+                example: 200
 
   /product/{id}:
     get:
@@ -111,14 +118,16 @@ paths:
           schema:
             type: integer
             format: int64
+          example: 1
         - name: X-User-Id
           in: header
           required: true
           schema:
             type: string
+          example: "1"
       responses:
         "200":
-          description: OK (ProductResDto)
+          description: OK (ProductResDto는 코드로 확인 필요)
           content:
             application/json:
               schema:
@@ -137,6 +146,9 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/ProductUpdateStockDto"
+            example:
+              productId: 1
+              productQuantity: 5
       responses:
         "200":
           description: OK (product id 반환)
@@ -145,27 +157,66 @@ paths:
               schema:
                 type: integer
                 format: int64
+                example: 200
 
 components:
   schemas:
-    # DTO 필드 정의는 네가 DTO 클래스 코드를 안 줘서 확인할 수 없음.
-    # 그래서 "object + additionalProperties: true"로 열어둠(문서가 깨지지 않게).
     OrderCreateDto:
       type: object
-      additionalProperties: true
-      description: OrderCreateDto (필드 구성은 코드 기준으로 확인 필요)
+      required: [productId, productCount]
+      properties:
+        productId:
+          type: integer
+          format: int64
+          description: 주문할 상품 ID
+          example: 1
+        productCount:
+          type: integer
+          format: int32
+          description: 주문 수량
+          example: 2
 
     ProductRegisterDto:
       type: object
-      additionalProperties: true
-      description: ProductRegisterDto (필드 구성은 코드 기준으로 확인 필요)
+      required: [name, category, price, stockQuantity]
+      properties:
+        name:
+          type: string
+          description: 상품명
+          example: "Keyboard"
+        category:
+          type: string
+          description: 카테고리
+          example: "IT"
+        price:
+          type: integer
+          format: int32
+          description: 가격
+          example: 30000
+        stockQuantity:
+          type: integer
+          format: int32
+          description: 초기 재고 수량
+          example: 10
 
     ProductUpdateStockDto:
       type: object
-      additionalProperties: true
-      description: ProductUpdateStockDto (필드 구성은 코드 기준으로 확인 필요)
+      required: [productId, productQuantity]
+      properties:
+        productId:
+          type: integer
+          format: int64
+          description: 재고 변경 대상 상품 ID
+          example: 1
+        productQuantity:
+          type: integer
+          format: int32
+          description: 변경할 재고 수량(또는 증감 수량은 코드 기준 확인 필요)
+          example: 5
 
+    # ProductResDto는 네가 코드 내용을 아직 안 줘서 필드를 확인할 수 없음.
+    # 문서가 깨지지 않도록 열어둠.
     ProductResDto:
       type: object
       additionalProperties: true
-      description: ProductResDto (필드 구성은 코드 기준으로 확인 필요)
+      description: ProductResDto (필드 구성은 ProductResDto.java 확인 필요)
