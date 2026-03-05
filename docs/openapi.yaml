@@ -2,6 +2,20 @@ openapi: 3.0.3
 info:
   title: EKS MSA Portfolio API
   version: 1.0.0
+  description: |
+    AWS EKS 기반 MSA 포트폴리오 API 문서.
+    (현재는 인프라 삭제 상태라 Try it out은 동작하지 않을 수 있습니다.)
+
+servers:
+  - url: https://example.com
+
+tags:
+  - name: member
+    description: 회원
+  - name: categories
+    description: 카테고리
+  - name: searchOption
+    description: 검색옵션
 
 paths:
   /health:
@@ -10,3 +24,251 @@ paths:
       responses:
         "200":
           description: OK
+
+  /api/v1/member/sign:
+    post:
+      tags: [member]
+      summary: 회원가입
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemberSignRequest"
+      responses:
+        "200":
+          description: OK
+
+    put:
+      tags: [member]
+      summary: 회원정보 수정
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemberUpdateRequest"
+      responses:
+        "200":
+          description: OK
+
+  /api/v1/member/login:
+    post:
+      tags: [member]
+      summary: 로그인
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: OK
+
+  /api/v1/member/logout:
+    get:
+      tags: [member]
+      summary: 로그아웃
+      responses:
+        "200":
+          description: OK
+
+  /api/v1/member/info:
+    get:
+      tags: [member]
+      summary: 회원정보 조회
+      responses:
+        "200":
+          description: OK
+
+  /api/v1/categories:
+    get:
+      tags: [categories]
+      summary: 카테고리 조회
+      responses:
+        "200":
+          description: OK
+
+  /api/v1/categories/{seqId}:
+    get:
+      tags: [categories]
+      summary: 특정 카테고리 조회
+      parameters:
+        - name: seqId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+
+    post:
+      tags: [categories]
+      summary: 카테고리 등록
+      parameters:
+        - name: seqId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryCreateRequest"
+      responses:
+        "200":
+          description: OK
+
+    put:
+      tags: [categories]
+      summary: 카테고리 수정
+      parameters:
+        - name: seqId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryUpdateRequest"
+      responses:
+        "200":
+          description: OK
+
+  /api/v1/categories/child/{seqId}:
+    get:
+      tags: [categories]
+      summary: 자식 카테고리 조회
+      parameters:
+        - name: seqId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+
+  /api/v1/searchOption/kind:
+    post:
+      tags: [searchOption]
+      summary: 검색옵션 등록
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SearchOptionCreateRequest"
+      responses:
+        "200":
+          description: OK
+
+  /api/v1/searchOption/kind/{searchOptionId}:
+    get:
+      tags: [searchOption]
+      summary: 검색옵션 조회
+      parameters:
+        - name: searchOptionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+
+    put:
+      tags: [searchOption]
+      summary: 검색옵션 수정
+      parameters:
+        - name: searchOptionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SearchOptionUpdateRequest"
+      responses:
+        "200":
+          description: OK
+
+components:
+  schemas:
+    LoginRequest:
+      type: object
+      required: [userName, password]
+      properties:
+        userName:
+          type: string
+          description: 회원 ID
+          example: sinnake
+        password:
+          type: string
+          description: 비밀번호
+          example: "q1w2e3r$"
+
+    MemberSignRequest:
+      type: object
+      required: [userName, password, rePassword]
+      properties:
+        userName:
+          type: string
+          description: 회원 ID
+        password:
+          type: string
+          description: 비밀번호
+        rePassword:
+          type: string
+          description: 비밀번호 확인
+        address:
+          type: string
+          description: 주소
+
+    MemberUpdateRequest:
+      type: object
+      properties:
+        password:
+          type: string
+          description: 변경할 비밀번호
+        address:
+          type: string
+          description: 변경할 주소
+
+    CategoryCreateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: 카테고리명
+
+    CategoryUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: 카테고리명
+
+    SearchOptionCreateRequest:
+      type: object
+      properties:
+        kindName:
+          type: string
+          description: 검색옵션 이름
+
+    SearchOptionUpdateRequest:
+      type: object
+      properties:
+        kindName:
+          type: string
+          description: 검색옵션 이름
